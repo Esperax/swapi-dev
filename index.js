@@ -19,13 +19,7 @@ hasSurfaceWater = function(planet) {
 
 const params = [hasMoutains, hasSurfaceWater]; // You can change params to check different datas
 const args = process.argv.slice(2);
-try {
-    checkArgs(args);
-    const filmNb = args[0];
-    getPlanetTotalDiameterWithParams(filmNb, params);
-} catch (err) {
-    console.error(err.message);
-}
+getPlanetTotalDiameterWithParams(params);
 
 // --- END MAIN PROGRAM ---
 
@@ -44,14 +38,22 @@ function getStarWarsData(url) {
             resolve(response);
         })
         .catch(error => {
-            reject(error);
+            if (error.response.status === 404) {
+                reject(new Error("Film not found!"));
+            } else {
+                reject(error);
+            }
         });
     });
 }
 
-function getPlanetTotalDiameterWithParams(filmNb, params) {
+async function getPlanetTotalDiameterWithParams(params) {
     // Get planets data for a specific films
-    getStarWarsData(`https://swapi.dev/api/films/${filmNb}/`).then(film => {
+    try {
+        checkArgs(args);
+        const filmNb = args[0];
+
+        let film = await getStarWarsData(`https://swapi.dev/api/films/${filmNb}/`);
         let planetPromises = [];
         const planetsUrl = film.data.planets;
         planetsUrl.forEach(planetUrl => {
@@ -79,13 +81,13 @@ function getPlanetTotalDiameterWithParams(filmNb, params) {
                 }
             }); 
             if(resultPlanets) {
-                message += `Total diameter ${totalDiameter}`;
+                message += `Total diameter: ${totalDiameter}`;
             }
             printResultMessage(filmNb, resultPlanets, message);
         });
-    }).catch(() => {
-        console.error("This film doesn't exist or isn't supported by the API");
-    });
+    } catch(error) {
+        console.error(error.message);
+    }
 }
 
 function printResultMessage(filmNb, planets, message) {
